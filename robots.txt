@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://jeunesse-okubo.onrender.com/sitemap.xml
