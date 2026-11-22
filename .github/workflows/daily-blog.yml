@@ -1,0 +1,38 @@
+name: Daily blog publishing
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '12 9 * * *'
+      timezone: 'Asia/Tokyo'
+permissions:
+  contents: write
+concurrency:
+  group: daily-blog-publishing
+  cancel-in-progress: false
+jobs:
+  publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          persist-credentials: true
+      - name: Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Generate and render blog post
+        env:
+          OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
+          OPENAI_MODEL: gpt-4.1-mini
+          SITE_URL: https://jeunesse-okubo.onrender.com
+        run: python3 scripts/blog.py daily
+      - name: Commit generated content
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add data/posts.json blog/ sitemap.xml feed.xml
+          if ! git diff --cached --quiet; then
+            git commit -m "Publish daily Jeunesse blog article"
+            git push
+          fi
