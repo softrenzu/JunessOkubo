@@ -1,1 +1,1 @@
-window.JEUNESSE_GA4_ID = "";
+window.JEUNESSE_GA4_ID = "G-0Y8C0C4S89";
