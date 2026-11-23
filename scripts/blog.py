@@ -78,6 +78,8 @@ def ai_post(topic,angle,today,index):
       "21時から翌9時は10名以下。ハンモック撤去済み。"
       "料金、空き状況、現在のキャンペーン、イベント、口コミ、ニュース、未確認の設備や近隣店舗の情報を創作しない。"
       "著作権と近隣への配慮を促す。SEO目的の単語の羅列をしない。既存文章の複製は禁止。"
+      "読者が実際に役立てられる独自の具体例を入れ、最後に施設の公式upnow予約ページへの自然な案内を入れる。"
+      "公式予約先は https://upnow.jp/goodspace/jeunesse。"
       +"テーマ:"+topic[0]+"。角度:"+angle+"。ポイント:"+",".join(topic[1:])+"。")
     try:
         data=json.dumps({"model":os.getenv("OPENAI_MODEL","gpt-4.1-mini"),
@@ -118,7 +120,7 @@ def article(p):
         +"<div class='disclaimer'>記事は一般的な企画のヒントです。設備・利用条件・料金は変更されることがあります。</div>"
         +"<div class='cta'><h2>次の集まりは、ジュネス新大久保で。</h2>"
         +"<p>最新の空室・料金・利用条件は公式予約ページから。</p>"
-        +"<a class='pill coral' href='"+BOOK+"'>予約ページを見る ↗</a></div></main>")
+        +"<a class='pill coral' href='"+BOOK+"' target='_blank' rel='noopener noreferrer'>upnowで予約する ↗</a></div></main>")
     data={"@context":"https://schema.org","@type":"BlogPosting","headline":p["title"],
           "datePublished":p["date"],"description":p["summary"],"inLanguage":"ja"}
     body+="<script type='application/ld+json'>"+json.dumps(data,ensure_ascii=False).replace("<","\\u003c")+"</script>"
@@ -163,7 +165,15 @@ def daily():
     i=delta%len(TOPICS)
     topic=TOPICS[i]
     angle=ANGLES[(delta//len(TOPICS))%len(ANGLES)]
-    posts.insert(0,ai_post(topic,angle,today,i) or fallback(topic,angle,today,i))
+    generated=ai_post(topic,angle,today,i)
+    if generated is None:
+        print("ARTICLE_SOURCE=editorial_template; OpenAI API key missing or request failed",file=sys.stderr)
+        generated=fallback(topic,angle,today,i)
+        generated["generation_source"]="editorial_template"
+    else:
+        print("ARTICLE_SOURCE=openai_api")
+        generated["generation_source"]="openai_api"
+    posts.insert(0,generated)
     POSTS.write_text(json.dumps(posts,ensure_ascii=False,indent=2)+"\n",encoding="utf-8")
     build(posts)
 if __name__=="__main__":
