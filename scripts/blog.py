@@ -6,6 +6,7 @@ import json
 import os
 from pathlib import Path
 import re
+import shutil
 import sys
 import urllib.request
 from zoneinfo import ZoneInfo
@@ -109,7 +110,7 @@ def shell(title,desc,body,canonical):
 <body><header><div class="wrap nav"><a class="brand" href="/"><b class="mark">J.</b><span>JEUNESSE<small>SHIN-OKUBO 101</small></span></a>
 <nav><a href="/">スペース紹介</a><a href="/blog/">ブログ</a><a href="/#access">アクセス</a></nav><a class="pill dark" href="{book}">予約ページ ↗</a></div></header>
 {body}<footer><div class="wrap foot"><a class="brand" href="/"><b class="mark">J.</b><span>JEUNESSE<small>SHIN-OKUBO 101</small></span></a>
-<div><a href="/">トップ</a><a href="/blog/">ブログ</a><a href="{book}">予約</a></div><small>© JEUNESSE SHIN-OKUBO. 最新の利用条件を予約ページでご確認ください。</small></div></footer></body></html>""".format(title=esc(title),desc=esc(desc),canonical=esc(canonical),book=BOOK,body=body)
+<div><a href="/">トップ</a><a href="/blog/">ブログ</a><a href="{book}">予約</a><a href="/privacy.html">アクセス解析について</a></div><small>© JEUNESSE SHIN-OKUBO. 最新の利用条件を予約ページでご確認ください。</small></div></footer><script src="/analytics-config.js"></script><script src="/analytics.js" defer></script></body></html>""".format(title=esc(title),desc=esc(desc),canonical=esc(canonical),book=BOOK,body=body)
 def article(p):
     sections="".join("<section><h2>"+esc(s["heading"])+"</h2><p>"+esc(s["body"])+"</p></section>" for s in p["sections"])
     body=("<main class='article'><div class='crumb'><a href='/'>TOP</a> / <a href='/blog/'>BLOG</a></div>"
@@ -153,6 +154,12 @@ def build(posts):
         feed.append("<item><title>"+xe(p["title"])+"</title><link>"+url+"</link><guid>"+url+"</guid><description>"+xe(p["summary"])+"</description></item>")
     feed.append("</channel></rss>")
     (ROOT/"feed.xml").write_text("\n".join(feed)+"\n",encoding="utf-8")
+    # Render's existing fixed copy command doesn't include these new assets.
+    # Copy them during the build so all pages have GA4 and disclosure support.
+    publish = ROOT / "public"
+    publish.mkdir(exist_ok=True)
+    for asset in ("analytics-config.js", "analytics.js", "privacy.html"):
+        shutil.copy2(ROOT / asset, publish / asset)
     print("Built",len(posts),"articles")
 def daily():
     today=dt.datetime.now(ZoneInfo("Asia/Tokyo")).date().isoformat()
